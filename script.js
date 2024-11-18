@@ -1,3 +1,7 @@
+let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+let total = expenses.reduce((acc, expense) => acc + expense.amount, 0);
+let expenseChart = null;
+
 // Check if a name is already saved in localStorage
 function setUserName() {
     let studentName = localStorage.getItem('studentName');
@@ -18,19 +22,9 @@ function updateTitle(name) {
     trackerTitle.textContent = `${name}'s Expense Tracker`;
 }
 
-// Call the setUserName function when the page loads
-setUserName();
-
-
-
-
-
-
-let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
-let total = expenses.reduce((acc, expense) => acc + expense.amount, 0);
-
 // Load the UI with saved data
 updateUI();
+createExpenseChart();
 
 function addExpense() {
     const description = document.getElementById('description').value;
@@ -45,7 +39,13 @@ function addExpense() {
         // Save to localStorage
         localStorage.setItem('expenses', JSON.stringify(expenses));
 
+        // Reset input fields
+        document.getElementById('description').value = '';
+        document.getElementById('amount').value = '';
+        document.getElementById('expense-time').value = '';
+
         updateUI();
+        createExpenseChart();
     } else {
         alert('Please enter valid expense details and time.');
     }
@@ -57,10 +57,17 @@ function updateUI() {
 
     expenseList.innerHTML = '';
     expenses.forEach((expense, index) => {
-        expenseList.innerHTML += `<p>${expense.description}: ₹${expense.amount.toFixed(2)} at ${formatTime(expense.time)} <button onclick="deleteExpense(${index})">Delete</button></p>`;
+        expenseList.innerHTML += `
+            <div class="flex justify-between items-center bg-blue-50 p-2 rounded">
+                <span>${expense.description}: ₹${expense.amount.toFixed(2)}</span>
+                <button onclick="deleteExpense(${index})" class="text-red-500 hover:text-red-700">
+                    🗑️
+                </button>
+            </div>
+        `;
     });
 
-    totalExpense.textContent = `Total: ₹${total.toFixed(2)}`;
+    totalExpense.textContent = `Total Expenses: ₹${total.toFixed(2)}`;
 }
 
 function deleteExpense(index) {
@@ -73,11 +80,9 @@ function deleteExpense(index) {
         localStorage.setItem('expenses', JSON.stringify(expenses));
 
         updateUI();
+        createExpenseChart();
     }
 }
-
-
-   
 
 function formatTime(time) {
     const date = new Date(time);
@@ -88,7 +93,7 @@ function showMonthlyExpenses() {
     const monthlyExpenses = {};
     expenses.forEach(expense => {
         const date = new Date(expense.time);
-        const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+        const monthYear = `${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
 
         if (!monthlyExpenses[monthYear]) {
             monthlyExpenses[monthYear] = 0;
@@ -97,13 +102,16 @@ function showMonthlyExpenses() {
     });
 
     const monthlyExpenseList = document.getElementById('monthly-expense-list');
-    monthlyExpenseList.innerHTML = '<h3>Monthly Expenses</h3>'; 
+    monthlyExpenseList.innerHTML = ''; 
 
     for (const [monthYear, total] of Object.entries(monthlyExpenses)) {
-        monthlyExpenseList.innerHTML += `<p>${monthYear}: ₹${total.toFixed(2)}</p>`;
+        monthlyExpenseList.innerHTML += `
+            <div class="bg-green-50 p-2 rounded">
+                ${monthYear}: ₹${total.toFixed(2)}
+            </div>
+        `;
     }
 }
-
 
 function showDetailedMonthlyExpenses() {
     const selectedMonth = document.getElementById('month-select').value;
@@ -118,69 +126,103 @@ function showDetailedMonthlyExpenses() {
     });
 
     const detailedMonthlyExpenseList = document.getElementById('detailed-monthly-expense-list');
-    detailedMonthlyExpenseList.innerHTML = '<h3>Detailed Expenses</h3>';
+    detailedMonthlyExpenseList.innerHTML = '';
 
     if (detailedMonthlyExpenses.length === 0) {
-        detailedMonthlyExpenseList.innerHTML += '<p>No expenses found for this month.</p>';
+        detailedMonthlyExpenseList.innerHTML = '<p class="text-gray-500">No expenses found for this month.</p>';
         return;
     }
 
     detailedMonthlyExpenses.forEach(expense => {
         const expenseDate = new Date(expense.time).toLocaleDateString();
-        detailedMonthlyExpenseList.innerHTML += `<p>${expenseDate}: ${expense.description} - ₹${expense.amount.toFixed(2)}</p>`;
+        detailedMonthlyExpenseList.innerHTML += `
+            <div class="bg-blue-50 p-2 rounded">
+                ${expenseDate}: ${expense.description} - ₹${expense.amount.toFixed(2)}
+            </div>
+        `;
     });
 }
 
+function createExpenseChart() {
+    const ctx = document.getElementById('expense-chart').getContext('2d');
+    
+    // Group expenses by month
+    const monthlyData = expenses.reduce((acc, expense) => {
+        const date = new Date(expense.time);
+        const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
+        acc[monthKey] = (acc[monthKey] || 0) + expense.amount;
+        return acc;
+    }, {});
 
+    // Prepare data for chart
+    const labels = Object.keys(monthlyData);
+    const data = Object.values(monthlyData);
 
-// download
+    // Destroy previous chart if it exists
+    if (expenseChart) {
+        expenseChart.destroy();
+    }
+
+    // Create new chart
+    expenseChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Monthly Expenses (₹)',
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Expense Amount (₹)'
+                    }
+                }
+            }
+        }
+    });
+}
+
 function downloadData() {
-    // Check if there are expenses to download
     if (expenses.length === 0) {
         alert("No data to download.");
         return;
     }
 
-    // Convert the expenses array to CSV format
     const csvContent = "Description,Amount,Time\n" + expenses.map(exp => 
         `${exp.description},${exp.amount},${exp.time}`).join("\n");
 
-    // Create a Blob with the CSV data
     const blob = new Blob([csvContent], { type: 'text/csv' });
-
-    // Create a temporary link element to trigger the download
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "expense_data.csv"; // Name of the downloaded file
-
-    // Trigger the click event to download the file
+    link.download = "expense_data.csv";
     link.click();
 }
 
-
-
-//download in excell
-
 function downloadExcelData() {
-    // Check if there are expenses to download
     if (expenses.length === 0) {
         alert("No data to download.");
         return;
     }
 
-    // Prepare the data in a format that SheetJS can work with
-    const ws_data = [["Description", "Amount", "Time"]]; // Headers
+    const ws_data = [["Description", "Amount", "Time"]];
     expenses.forEach(exp => {
-        ws_data.push([exp.description, exp.amount, exp.time]); // Data rows
+        ws_data.push([exp.description, exp.amount, exp.time]);
     });
 
-    // Create a worksheet from the data
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
-
-    // Create a new workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Expenses");
-
-    // Trigger the download of the workbook as an .xlsx file
     XLSX.writeFile(wb, "expense_data.xlsx");
 }
+
+// Call the setUserName function when the page loads
+setUserName();
