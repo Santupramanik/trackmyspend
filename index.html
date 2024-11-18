@@ -1,72 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Expense Tracker</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Expense Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css" rel="stylesheet">
 </head>
-<body>
-  <h1 id="tracker-title">Student Expense Tracker</h1>
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 id="tracker-title" class="text-3xl font-bold text-center text-blue-800 mb-6"></h1>
+        
+        <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+            <div class="tracker-form grid md:grid-cols-2 gap-4">
+                <input type="text" id="description" placeholder="Expense Description" 
+                    class="border rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="number" id="amount" placeholder="Amount (₹)" 
+                    class="border rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="datetime-local" id="expense-time" 
+                    class="border rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="addExpense()" 
+                    class="bg-blue-500 text-white rounded p-2 hover:bg-blue-600 transition">
+                    Add Expense
+                </button>
+            </div>
+        </div>
 
-    <div class="tracker-form">
-    <input type="text" id="description" placeholder="Expense Description">
-    <input type="number" id="amount" placeholder="Amount">
-    <input type="datetime-local" id="expense-time" placeholder="Time">
-    <button onclick="addExpense()">Add Expense</button>
-</div>
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">Expense List</h2>
+                <div id="expense-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
+                <div id="total-expense" class="mt-4 text-lg font-bold text-green-600"></div>
+            </div>
 
-    <div id="expense-list"></div>
-    <div id="total-expense">Total: ₹0</div>
-  
-  
-  
-  
-  <div class="monthly-expense-section">
-    <button onclick="showMonthlyExpenses()">Show Monthly Expenses</button>
-    <div id="monthly-expense-list"></div>
-</div>
-  
-  
-  
-  
-  
-  
-  
-  <div class="monthly-detailed-section">
-    <h3>View Detailed Monthly Expenses</h3>
-    <select id="month-select">
-        <option value="" disabled selected>Select a Month</option>
-        <option value="0">January</option>
-        <option value="1">February</option>
-        <option value="2">March</option>
-        <option value="3">April</option>
-        <option value="4">May</option>
-        <option value="5">June</option>
-        <option value="6">July</option>
-        <option value="7">August</option>
-        <option value="8">September</option>
-        <option value="9">October</option>
-        <option value="10">November</option>
-        <option value="11">December</option>
-    </select>
-    <button onclick="showDetailedMonthlyExpenses()">Show Details</button>
-    <div id="detailed-monthly-expense-list"></div>
-</div>
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">Expense Analytics</h2>
+                <canvas id="expense-chart"></canvas>
+            </div>
+        </div>
 
+        <div class="grid md:grid-cols-2 gap-6 mt-6">
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">Monthly Expenses</h2>
+                <button onclick="showMonthlyExpenses()" 
+                    class="bg-green-500 text-white rounded p-2 hover:bg-green-600 mb-4">
+                    Show Monthly Summary
+                </button>
+                <div id="monthly-expense-list" class="space-y-2"></div>
+            </div>
 
-  
-  
-  <button onclick="downloadData()">Download Data</button>
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">Detailed Monthly Expenses</h2>
+                <select id="month-select" class="border rounded p-2 mr-2">
+                    <option value="">Select Month</option>
+                    <option value="0">January</option>
+                    <option value="1">February</option>
+                    <option value="2">March</option>
+                    <option value="3">April</option>
+                    <option value="4">May</option>
+                    <option value="5">June</option>
+                    <option value="6">July</option>
+                    <option value="7">August</option>
+                    <option value="8">September</option>
+                    <option value="9">October</option>
+                    <option value="10">November</option>
+                    <option value="11">December</option>
+                </select>
+                <button onclick="showDetailedMonthlyExpenses()" 
+                    class="bg-blue-500 text-white rounded p-2 hover:bg-blue-600">
+                    Show Details
+                </button>
+                <div id="detailed-monthly-expense-list" class="mt-4 space-y-2 max-h-48 overflow-y-auto"></div>
+            </div>
+        </div>
 
-  
-  <button onclick="downloadExcelData()">Download Excel (XLSX)</button>
+        <div class="mt-6 flex justify-center space-x-4">
+            <button onclick="downloadData()" 
+                class="bg-gray-500 text-white rounded p-2 hover:bg-gray-600">
+                Download CSV
+            </button>
+            <button onclick="downloadExcelData()" 
+                class="bg-green-500 text-white rounded p-2 hover:bg-green-600">
+                Download Excel
+            </button>
+        </div>
+    </div>
 
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
